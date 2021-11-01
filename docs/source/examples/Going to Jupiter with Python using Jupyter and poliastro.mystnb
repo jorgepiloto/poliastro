@@ -4,7 +4,7 @@ jupytext:
     extension: .mystnb
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.11.1
+    jupytext_version: 1.11.4
 kernelspec:
   display_name: Python 3
   language: python
@@ -93,11 +93,7 @@ ss_e_ic1 = Orbit.from_ephem(Sun, earth, epoch=ic1_end.epoch)
 # We can check new bodies positions
 plotter = StaticOrbitPlotter()
 plotter.plot_body_orbit(Earth, ic1_end.epoch, label="Earth at end of flyby")
-plotter.plot_trajectory(
-    ic1_end.sample(min_anomaly=0 * u.deg, max_anomaly=180 * u.deg),
-    label="Inner cruise 1 full orbit",
-    color="C1",
-);
+plotter.plot_maneuver(ss_e0, man, label="Inner cruise 1 full orbit", color="C1");
 ```
 
 We can check that the period of the orbit is similar to the one stated in the mission's documentation. Remember that in the previous plot we only plotter half of the orbit for Juno's first maneuver and the period is the time that would take Juno to complete one full revolution around this new orbit.
