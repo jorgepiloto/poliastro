@@ -165,7 +165,7 @@ class StaticOrbitPlotter(BaseOrbitPlotter, Mixin2D):
         # orbit depending on the last plotted line
         if line_position is not None:
             line_position.set_label(label)
-        else:
+        elif line_position is None and line_coordinates is not None:
             line_coordinates[0].set_label(label)
 
         self._ax.legend(
@@ -237,8 +237,10 @@ class StaticOrbitPlotter(BaseOrbitPlotter, Mixin2D):
             initial_orbit, maneuver, label=label, color=color, trail=trail
         )
 
-        if label:
+        if label and lines is not None:
             self._set_legend(label, *lines)
+        else:
+            self._set_legend(label, None, None)
 
         return lines
 

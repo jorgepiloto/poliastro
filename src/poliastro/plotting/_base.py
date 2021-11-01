@@ -170,7 +170,8 @@ class BaseOrbitPlotter:
 
         if len(maneuver_phases) == 0:
             # For single-impulse maneuver only draw the impulse marker
-            self._draw_impulse(color, f"Impulse - {label}", maneuver_phases[0].r)
+            self._draw_impulse(color, f"Impulse - {label}", final_phase.r)
+            return None
         else:
             coordinates_list = []
 
@@ -200,13 +201,13 @@ class BaseOrbitPlotter:
                 color, f"Impulse {ith_impulse + 2} - {label}", final_phase.r
             )
 
-        # Concatenate the different phase coordinates into a single coordinates
-        # instance
-        coordinates = concatenate_representations(coordinates_list)
+            # Concatenate the different phase coordinates into a single coordinates
+            # instance
+            coordinates = concatenate_representations(coordinates_list)
 
-        return self.__add_trajectory(
-            coordinates, None, label=str(label), colors=colors, dashed=False
-        )
+            return self.__add_trajectory(
+                coordinates, None, label=str(label), colors=colors, dashed=False
+            )
 
     def _plot(self, orbit, *, label=None, color=None, trail=False):
         colors = self._get_colors(color, trail)
