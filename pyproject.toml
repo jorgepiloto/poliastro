@@ -51,6 +51,7 @@ dependencies = [
     "pandas",
     "plotly >=4.0,<6",
     "pyerfa",
+    "pyvista",
     "scipy >=1.4.0",
 ]
 dynamic = ["version", "description"]
