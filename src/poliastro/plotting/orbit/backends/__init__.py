@@ -3,6 +3,7 @@
 
 from poliastro.plotting.orbit.backends.matplotlib import Matplotlib2D
 from poliastro.plotting.orbit.backends.plotly import Plotly2D, Plotly3D
+from poliastro.plotting.orbit.backends.pyvista import PyVista3D
 
 DEFAULT_ORBIT_PLOTTER_BACKENDS_2D = {
     "matplotlib2D": Matplotlib2D,
@@ -33,10 +34,16 @@ DEFAULT_ORBIT_PLOTTER_PLOTLY_BACKENDS = {
 }
 """A dictionary relating orbit plotter backends for plotly and their classes."""
 
+DEFAULT_ORBIT_PLOTTER_PYVISTA_BACKENDS = {
+    "pyvista3D": PyVista3D
+}
+"""A dictionary relating orbit plotter backends for pyvista and their classes."""
+
 __all__ = [
     "DEFAULT_ORBIT_PLOTTER_BACKENDS_2D",
     "DEFAULT_ORBIT_PLOTTER_BACKENDS_3D",
     "DEFAULT_ORBIT_PLOTTER_BACKENDS",
     "DEFAULT_ORBIT_PLOTTER_MATPLOTLIB_BACKENDS",
     "DEFAULT_ORBIT_PLOTTER_PLOTLY_BACKENDS",
+    "DEFAULT_ORBIT_PLOTTER_PYVISTA_BACKENDS",
 ]
