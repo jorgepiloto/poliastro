@@ -1,14 +1,15 @@
 [![poliastro](https://www.poliastro.space/images/logo_text.png)](https://www.poliastro.space/)
 
-Name:         | poliastro
-:------------:|:--------------
-**Website**:  | <https://www.poliastro.space/>
-**Author**:   | Juan Luis Cano Rodríguez [![orcid](https://img.shields.io/badge/id-0000--0002--2187--161X-a6ce39.svg)](http://orcid.org/0000-0002-2187-161X)
-**Version**:  | 0.18.dev0
+
+| **Name**  |         **Website**          |                             **Author**                             | **Version** |
+|:---------:|:----------------------------:|:------------------------------------------------------------------:|:-----------:|
+| poliastro | https://www.poliastro.space/ | Juan Luis Cano Rodríguez <br> [![orcid_badge]](https://github.com) |  0.18.dev0  |
 
 [![poliastro](https://img.shields.io/circleci/build/gh/poliastro/poliastro/main?style=flat-square)](https://circleci.com/gh/poliastro/poliastro/?branch=main)
 [![codecov](https://img.shields.io/codecov/c/github/poliastro/poliastro.svg?style=flat-square)](https://codecov.io/github/poliastro/poliastro?branch=main)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/poliastro/poliastro/main.svg)](https://results.pre-commit.ci/latest/github/poliastro/poliastro/main)
+
+[orcid_badge]: https://img.shields.io/badge/id-0000--0002--2187--161X-a6ce39.svg "orcid"
 
 [![docs](https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat-square)](https://docs.poliastro.space/en/latest/?badge=latest)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/poliastro/poliastro/raw/main/COPYING)
