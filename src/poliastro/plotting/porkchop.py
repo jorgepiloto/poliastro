@@ -107,26 +107,17 @@ class PorkchopPlotter:
     Parameters
     ----------
     departure_body: poliastro.bodies.Body
-        Body from which departure is done
+        Body from which departure is done.
     target_body: poliastro.bodies.Body
-        Body for targetting
+        Body for targetting.
     launch_span: astropy.time.Time
-        Time span for launch
+        Time span for launch.
     arrival_span: astropy.time.Time
-        Time span for arrival
+        Time span for arrival.
     ax: matplotlib.axes.Axes
-        For custom figures
-    tfl: bool
-        For plotting time flight contour lines
-    vhp: bool
-        For plotting arrival velocity contour lines
-    max_c3: float
-        Sets the maximum C3 value for porkchop
-    max_vhp: float
-        Sets the maximum arrival velocity for porkchop
-
+        For custom figures.
+    
     """
-
     def __init__(
         self,
         departure_body,
@@ -134,23 +125,42 @@ class PorkchopPlotter:
         launch_span,
         arrival_span,
         ax=None,
-        tfl=True,
-        vhp=True,
-        max_c3=45.0 * u.km**2 / u.s**2,
-        max_vhp=5 * u.km / u.s,
     ):
         self.departure_body = departure_body
         self.target_body = target_body
         self.launch_span = launch_span
         self.arrival_span = arrival_span
         self.ax = ax
-        self.tfl = tfl
-        self.vhp = vhp
-        self.max_c3 = max_c3
-        self.max_vhp = max_vhp
 
-    def porkchop(self):
+    def plot(
+        self, 
+        plot_tof_lines=True,
+        plot_dv_lines=True,
+        plot_av_lines=False,
+        c3_levels=np.linspace(0, 45, 30) * u.km**2 / u.s**2,
+        tof_levels=np.linspace(0, 500, 5) * u.d,
+        dv_levels=np.linspace(0, 5, 5) * u.km / u.s,
+        av_levels=np.linspace(0, 5, 5) * u.km / u.s,
+        title=None,
+    ):
         """Plots porkchop between two bodies.
+
+        Parameters
+        ----------
+        plot_tof_lines : bool
+            For plotting time flight contour lines.
+        plot_dv_lines : bool
+            For plotting departure velocity contour lines.
+        plot_av_lines : bool
+            For plotting arrival velocity contour lines.
+        c3_levels: numpy.ndarray
+            Levels for c3 contour lines.
+        dvl_levels: numpy.ndarray
+            Levels for departure velocity contour lines.
+        avl_levels: numpy.ndarray
+            Levels for arrival velocity contour lines.
+        title : str
+            Title of the plot.
 
         Returns
         -------
@@ -176,6 +186,15 @@ class PorkchopPlotter:
         >>> dv_launch, dev_dpt, c3dpt, c3arr, tof = porkchop_plot.porkchop()
 
         """
+        self.c3_levels = c3_levels
+        self.tof_levels = tof_levels
+        self.dv_levels = dv_levels
+        self.av_levels = av_levels
+        self.plot_tof_lines = plot_tof_lines
+        self.plot_dv_lines = plot_dv_lines
+        self.plot_av_lines = plot_av_lines
+
+        # Compute porkchop values
         dv_launch, dv_arrival, c3_launch, c3_arrival, tof = targetting_vec(
             self.departure_body,
             self.target_body,
@@ -184,24 +203,23 @@ class PorkchopPlotter:
         )
 
         # Start drawing porkchop
-
         if self.ax is None:
             fig, self.ax = plt.subplots(figsize=(15, 15))
         else:
             fig = self.ax.figure
 
-        c3_levels = np.linspace(
-            0, self.max_c3.to_value(u.km**2 / u.s**2), 30
-        )
-
-        c = self.ax.contourf(
+        # Draw the contour with colors and the colorbar
+        c3_colors = self.ax.contourf(
             [D.to_datetime() for D in self.launch_span],
             [A.to_datetime() for A in self.arrival_span],
             c3_launch.astype("float64"),
             c3_levels.astype("float64"),
         )
+        c3_colorbar = fig.colorbar(c3_colors)
+        c3_colorbar.set_label("km2 / s2")
 
-        line = self.ax.contour(
+        # Draw the solid contour lines on top of previous colors
+        c3_lines = self.ax.contour(
             [D.to_datetime() for D in self.launch_span],
             [A.to_datetime() for A in self.arrival_span],
             c3_launch.astype("float64"),
@@ -209,45 +227,52 @@ class PorkchopPlotter:
             colors="black",
             linestyles="solid",
         )
+        self.ax.clabel(c3_lines, inline=1, fmt="%1.1f", colors="k", fontsize=10)
 
-        cbar = fig.colorbar(c)
-        cbar.set_label("km2 / s2")
-        self.ax.clabel(line, inline=1, fmt="%1.1f", colors="k", fontsize=10)
-
-        if self.tfl:
-            time_levels = np.linspace(100, 500, 5)
-
-            tfl_contour = self.ax.contour(
+        # Draw the time of flight lines (if requested)
+        if self.plot_tof_lines:
+            tof_lines = self.ax.contour(
                 [D.to_datetime() for D in self.launch_span],
                 [A.to_datetime() for A in self.arrival_span],
                 tof.astype("float64"),
-                time_levels.astype("float64"),
+                self.tof_levels.to_value(u.d).astype("float64"),
                 colors="red",
                 linestyles="dashed",
                 linewidths=3.5,
             )
-
             self.ax.clabel(
-                tfl_contour, inline=1, fmt="%1.1f", colors="r", fontsize=14
+                tof_lines, inline=1, fmt="%1.0f", colors="r", fontsize=14
             )
 
-        if self.vhp:
-            vhp_levels = np.linspace(0, self.max_vhp.to_value(u.km / u.s), 5)
-
-            vhp_contour = self.ax.contour(
+        # Draw the departure velocity lines (if requested)
+        if self.plot_dv_lines:
+            dvl_lines = self.ax.contour(
                 [D.to_datetime() for D in self.launch_span],
                 [A.to_datetime() for A in self.arrival_span],
-                dv_arrival.astype("float64"),
-                vhp_levels.astype("float64"),
+                dv_launch.astype("float64"),
+                self.dv_levels.astype("float64"),
                 colors="navy",
                 linewidths=2.0,
             )
-
             self.ax.clabel(
-                vhp_contour, inline=1, fmt="%1.1f", colors="navy", fontsize=12
+                dvl_lines, inline=1, fmt="%1.1f", colors="navy", fontsize=12
             )
 
-        self.ax.grid()
+        # Draw the arrival velocity lines (if requested)
+        if self.plot_av_lines:
+            dvl_lines = self.ax.contour(
+                [D.to_datetime() for D in self.launch_span],
+                [A.to_datetime() for A in self.arrival_span],
+                dv_arrival.astype("float64"),
+                self.av_levels.astype("float64"),
+                colors="navy",
+                linewidths=2.0,
+            )
+            self.ax.clabel(
+                dvl_lines, inline=1, fmt="%1.1f", colors="navy", fontsize=12
+            )
+
+        # Nice formated dates
         fig.autofmt_xdate()
 
         if not hasattr(self.target_body, "name"):
@@ -256,12 +281,9 @@ class PorkchopPlotter:
                 fontsize=14,
                 fontweight="bold",
             )
-        else:
-            self.ax.set_title(
-                f"{self.departure_body.name} - {self.target_body.name} for year {self.launch_span[0].datetime.year}, C3 Launch",
-                fontsize=14,
-                fontweight="bold",
-            )
+
+        if title:
+            self.ax.set_title(title, fontsize=14, fontweight="bold")
 
         self.ax.set_xlabel("Launch date", fontsize=10, fontweight="bold")
         self.ax.set_ylabel("Arrival date", fontsize=10, fontweight="bold")
