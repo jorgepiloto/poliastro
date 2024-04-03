@@ -134,6 +134,7 @@ class PorkchopPlotter:
 
     def plot(
         self, 
+        plot_c3_lines=True,
         plot_tof_lines=True,
         plot_dv_lines=True,
         plot_av_lines=False,
@@ -147,6 +148,8 @@ class PorkchopPlotter:
 
         Parameters
         ----------
+        plot_c3_lines : bool
+            For plotting C3 contour lines.
         plot_tof_lines : bool
             For plotting time flight contour lines.
         plot_dv_lines : bool
@@ -190,6 +193,7 @@ class PorkchopPlotter:
         self.tof_levels = tof_levels
         self.dv_levels = dv_levels
         self.av_levels = av_levels
+        self.plot_c3_lines = plot_c3_lines
         self.plot_tof_lines = plot_tof_lines
         self.plot_dv_lines = plot_dv_lines
         self.plot_av_lines = plot_av_lines
@@ -219,29 +223,30 @@ class PorkchopPlotter:
         c3_colorbar.set_label("km2 / s2")
 
         # Draw the solid contour lines on top of previous colors
-        c3_lines = self.ax.contour(
-            [D.to_datetime() for D in self.launch_span],
-            [A.to_datetime() for A in self.arrival_span],
-            c3_launch.astype("float64"),
-            c3_levels.astype("float64"),
-            colors="black",
-            linestyles="solid",
-        )
-        self.ax.clabel(c3_lines, inline=1, fmt="%1.1f", colors="k", fontsize=10)
+        if self.plot_c3_lines:
+            c3_lines = self.ax.contour(
+                [D.to_datetime() for D in self.launch_span],
+                [A.to_datetime() for A in self.arrival_span],
+                c3_launch.astype("float64"),
+                c3_levels.astype("float64"),
+                colors="black",
+                linestyles="solid",
+            )
+            self.ax.clabel(c3_lines, inline=1, fmt="%1.1f", colors="k", fontsize=10)
 
         # Draw the time of flight lines (if requested)
         if self.plot_tof_lines:
             tof_lines = self.ax.contour(
                 [D.to_datetime() for D in self.launch_span],
                 [A.to_datetime() for A in self.arrival_span],
-                tof.astype("float64"),
-                self.tof_levels.to_value(u.d).astype("float64"),
+                (tof / 365.25).astype("float64"),
+                self.tof_levels.to_value(u.year).astype("float64"),
                 colors="red",
                 linestyles="dashed",
                 linewidths=3.5,
             )
             self.ax.clabel(
-                tof_lines, inline=1, fmt="%1.0f", colors="r", fontsize=14
+                tof_lines, inline=1, fmt="%1.0f years", colors="r", fontsize=14
             )
 
         # Draw the departure velocity lines (if requested)
@@ -273,7 +278,7 @@ class PorkchopPlotter:
             )
 
         # Nice formated dates
-        fig.autofmt_xdate()
+        # fig.autofmt_xdate()
 
         if not hasattr(self.target_body, "name"):
             self.ax.set_title(
