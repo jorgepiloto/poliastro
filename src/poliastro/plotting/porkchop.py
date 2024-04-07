@@ -1,6 +1,7 @@
 """This is the implementation of porkchop plot."""
 from astropy import coordinates as coord, units as u
 from matplotlib import pyplot as plt
+from matplotlib import patheffects
 import numpy as np
 
 from poliastro.bodies import (
@@ -220,7 +221,7 @@ class PorkchopPlotter:
             c3_levels.astype("float64"),
         )
         c3_colorbar = fig.colorbar(c3_colors)
-        c3_colorbar.set_label("$km^2 / s^2")
+        c3_colorbar.set_label("$km^2 / s^2$")
 
         # Draw the solid contour lines on top of previous colors
         if self.plot_c3_lines:
@@ -245,9 +246,12 @@ class PorkchopPlotter:
                 linestyles="dashed",
                 linewidths=3.5,
             )
-            self.ax.clabel(
-                tof_lines, inline=1, fmt="%1.0f years", colors="r", fontsize=14
+            tof_lines.set(path_effects=[patheffects.withStroke(linewidth=6, foreground="k")])
+            tof_lines_labels = self.ax.clabel(
+                tof_lines, inline=1, fmt="%1.0f years", colors="r", fontsize=14, use_clabeltext=True
             )
+            plt.setp(tof_lines_labels, path_effects=[
+                patheffects.withStroke(linewidth=3, foreground="k")])
 
         # Draw the departure velocity lines (if requested)
         if self.plot_dv_lines:
@@ -292,22 +296,6 @@ class PorkchopPlotter:
 
         self.ax.set_xlabel("Launch date", fontsize=10, fontweight="bold")
         self.ax.set_ylabel("Arrival date", fontsize=10, fontweight="bold")
-
-        # Plot the minimum C3 launch energy point
-        # min_c3 = c3_launch.min()        
-        # launch_date_at_c3_min = np.meshgrid(self.launch_span, self.arrival_span)[0][np.unravel_index(c3_launch.argmin(), c3_launch.shape)]
-        # arrival_date_at_c3_min = np.meshgrid(self.launch_span, self.arrival_span)[1][np.unravel_index(c3_launch.argmin(), c3_launch.shape)]
-
-
-        # self.ax.plot(
-        #         launch_date_at_c3_min.to_datetime(),
-        #         arrival_date_at_c3_min.to_datetime(),
-        #         "ko",
-        #         markersize=15,
-        # )
-        # print(f"MINIMUM C3: {min_c3}")
-        # print(f"LAUNCH AT: {launch_date_at_c3_min}")
-        # print(f"ARRIVAL AT: {arrival_date_at_c3_min}")
 
         return (
             dv_launch * u.km / u.s,
