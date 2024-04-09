@@ -246,12 +246,12 @@ class PorkchopPlotter:
                 linestyles="dashed",
                 linewidths=3.5,
             )
-            tof_lines.set(path_effects=[patheffects.withStroke(linewidth=6, foreground="k")])
+            #tof_lines.set(path_effects=[patheffects.withStroke(linewidth=6, foreground="k")])
             tof_lines_labels = self.ax.clabel(
                 tof_lines, inline=1, fmt="%1.0f years", colors="r", fontsize=14, use_clabeltext=True
             )
-            plt.setp(tof_lines_labels, path_effects=[
-                patheffects.withStroke(linewidth=3, foreground="k")])
+            #plt.setp(tof_lines_labels, path_effects=[
+            #    patheffects.withStroke(linewidth=3, foreground="k")])
 
         # Draw the departure velocity lines (if requested)
         if self.plot_dv_lines:

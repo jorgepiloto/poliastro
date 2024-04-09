@@ -23,6 +23,7 @@ def plot_solar_system(
     labels=None,
     outer=True,
     backend=None,
+    plane=Planes.EARTH_ECLIPTIC,
     length_scale_units=u.km,
 ):
     """Plots the whole solar system in one single call.

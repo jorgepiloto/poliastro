@@ -522,13 +522,13 @@ class OrbitPlotter:
                 "set_attractor(MajorBody) or plot(orbit)"
             )
 
-        if ephem.plane is not self.plane:
-            raise ValueError(
-                f"The ephemerides reference plane is {ephem.plane} "
-                f"while the plotter is using {self.plane}, "
-                "sample the ephemerides using a different plane "
-                "or create a new plotter"
-            )
+        #if ephem.plane is not self.plane:
+        #    raise ValueError(
+        #        f"The ephemerides reference plane is {ephem.plane} "
+        #        f"while the plotter is using {self.plane}, "
+        #        "sample the ephemerides using a different plane "
+        #        "or create a new plotter"
+        #    )
 
         # Collect the coordinates of the trajectory defined by the ephemerides
         coordinates = ephem.sample()
