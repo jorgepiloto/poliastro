@@ -51,7 +51,7 @@ def _get_state(body, time):
     return rr.xyz, vv.xyz
 
 
-def _targetting(departure_body, target_body, t_launch, t_arrival):
+def _targetting(departure_body, target_body, t_launch, t_arrival, prograde):
     """This function returns the increment in departure and arrival velocities."""
     # Get position and velocities for departure and arrival
     rr_dpt_body, vv_dpt_body = _get_state(departure_body, t_launch)
@@ -74,7 +74,7 @@ def _targetting(departure_body, target_body, t_launch, t_arrival):
 
     try:
         # Lambert is now a Maneuver object
-        man_lambert = Maneuver.lambert(orb_dpt, orb_arr)
+        man_lambert = Maneuver.lambert(orb_dpt, orb_arr, prograde=prograde)
 
         # Get norm delta velocities
         dv_dpt = norm(man_lambert.impulses[0][1])
@@ -96,9 +96,9 @@ def _targetting(departure_body, target_body, t_launch, t_arrival):
         return None, None, None, None, None
 
 
-def targeting(departure_body, target_body, launch_span, arrival_span):
+def targeting(departure_body, target_body, launch_span, arrival_span, prograde):
     args_list = [
-        (departure_body, target_body, t_launch, t_arrival)
+        (departure_body, target_body, t_launch, t_arrival, prograde)
         for t_arrival in arrival_span for t_launch in launch_span
     ]
     with Pool() as pool:
@@ -119,10 +119,8 @@ class PorkchopPlotter:
         Time span for launch.
     arrival_span: astropy.time.Time
         Time span for arrival.
-    **maneuver_requirements: dict
-        Requirements for solving the transfer maneuver, including the maximum
-        number of revolutions, desired direction of motion (prograde or
-        retrograde), type of path.
+    prograde: bool
+        Prograde or retrograde transfer.
     """
     def __init__(
         self,
@@ -130,19 +128,20 @@ class PorkchopPlotter:
         target_body,
         launch_span,
         arrival_span,
-        **maneuver_requirements,
+        prograde=True,
     ):
         self.departure_body = departure_body
         self.target_body = target_body
         self.launch_span = launch_span
         self.arrival_span = arrival_span
-        self.maneuver_requirements = maneuver_requirements
+        self.prograde = prograde
 
         results = targeting(
             self.departure_body,
             self.target_body,
             self.launch_span,
             self.arrival_span,
+            self.prograde,
         )
         dv_launch, dv_arrival, c3_launch, c3_arrival, tof = zip(*results)
         self.launch_dv = np.array(dv_launch).reshape(len(self.launch_span), len(self.arrival_span))
@@ -280,7 +279,7 @@ class PorkchopPlotter:
             linestyles="dashed",
             linewidths=3.5,
         )
-        tof_lines.set(path_effects=[patheffects.withStroke(linewidth=6, foreground="k")])
+        tof_lines.set(path_effects=[patheffects.withStroke(linewidth=6, foreground="w")])
         tof_lines_labels = self.ax.clabel(
             tof_lines, inline=True, fmt="%1.0f years", colors="r", fontsize=14, use_clabeltext=True
         )
