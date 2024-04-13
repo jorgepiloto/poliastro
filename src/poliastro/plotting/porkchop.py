@@ -1,4 +1,6 @@
 """This is the implementation of porkchop plot."""
+from multiprocessing import Pool
+
 from astropy import coordinates as coord, units as u
 from matplotlib import pyplot as plt
 from matplotlib import patheffects
@@ -94,12 +96,14 @@ def _targetting(departure_body, target_body, t_launch, t_arrival):
         return None, None, None, None, None
 
 
-# numpy.vectorize is amazing
-targetting_vec = np.vectorize(
-    _targetting,
-    otypes=[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray],
-    excluded=[0, 1],
-)
+def targeting(departure_body, target_body, launch_span, arrival_span):
+    args_list = [
+        (departure_body, target_body, t_launch, t_arrival)
+        for t_arrival in arrival_span for t_launch in launch_span
+    ]
+    with Pool() as pool:
+        results = pool.starmap(_targetting, args_list)
+    return results
 
 
 class PorkchopPlotter:
@@ -134,13 +138,19 @@ class PorkchopPlotter:
         self.arrival_span = arrival_span
         self.maneuver_requirements = maneuver_requirements
 
-        # Compute porkchop values
-        self.launch_dv, self.arrival_dv, self.c3_launch, self.c3_arrival, self.tof = targetting_vec(
+        results = targeting(
             self.departure_body,
             self.target_body,
-            self.launch_span[np.newaxis, :],
-            self.arrival_span[:, np.newaxis],
+            self.launch_span,
+            self.arrival_span,
         )
+        dv_launch, dv_arrival, c3_launch, c3_arrival, tof = zip(*results)
+        self.launch_dv = np.array(dv_launch).reshape(len(self.launch_span), len(self.arrival_span))
+        self.arrival_dv = np.array(dv_arrival).reshape(len(self.launch_span), len(self.arrival_span))
+        self.c3_launch = np.array(c3_launch).reshape(len(self.launch_span), len(self.arrival_span))
+        self.c3_arrival = np.array(c3_arrival).reshape(len(self.launch_span), len(self.arrival_span))
+        self.tof = np.array(tof).reshape(len(self.launch_span), len(self.arrival_span))
+
 
         # Compute the minimum c3 energy value for launch and its associated
         # launch and arrival dates
@@ -208,8 +218,7 @@ class PorkchopPlotter:
                 colors="black",
                 linestyles="solid",
             )
-            self.ax.clabel(c3_launch_lines, inline=1, fmt="%1.1f $km^2/s^2$",
-                           colors="k", fontsize=8)
+            self.ax.clabel(c3_launch_lines, inline=1, fmt="%1.1f", colors="k", fontsize=10)
 
     def plot_arival_energy(
         self,
