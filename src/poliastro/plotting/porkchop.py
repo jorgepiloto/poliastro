@@ -269,33 +269,45 @@ class PorkchopPlotter:
 
         # Draw the arrival velocity lines (if requested)
         if self.plot_av_lines:
-            dvl_lines = self.ax.contour(
+            avl_lines = self.ax.contour(
                 [D.to_datetime() for D in self.launch_span],
                 [A.to_datetime() for A in self.arrival_span],
                 dv_arrival.astype("float64"),
                 self.av_levels.astype("float64"),
-                colors="navy",
+                colors="white",
                 linewidths=2.0,
             )
-            self.ax.clabel(
-                dvl_lines, inline=1, fmt="%1.0f km/s", colors="navy", fontsize=14
+            avl_lines.set(path_effects=[patheffects.withStroke(linewidth=3, foreground="k")])
+            avl_labels = self.ax.clabel(
+                avl_lines, inline=1, fmt="%1.0f km/s", colors="white",
+                fontsize=14, use_clabeltext=True
             )
-
-        # Nice formated dates
-        # fig.autofmt_xdate()
-
-        if not hasattr(self.target_body, "name"):
-            self.ax.set_title(
-                f"{self.departure_body.name} - Target Body for year {self.launch_span[0].datetime.year}, C3 Launch",
-                fontsize=14,
-                fontweight="bold",
-            )
+            plt.setp(avl_labels, path_effects=[
+                patheffects.withStroke(linewidth=3, foreground="k")])
 
         if title:
             self.ax.set_title(title, fontsize=14, fontweight="bold")
 
         self.ax.set_xlabel("Launch date", fontsize=10, fontweight="bold")
         self.ax.set_ylabel("Arrival date", fontsize=10, fontweight="bold")
+
+        # Plot the minimum C3 launch energy point
+        min_c3 = c3_launch.min()        
+        launch_date_at_c3_min = np.meshgrid(self.launch_span, self.arrival_span)[0][np.unravel_index(c3_launch.argmin(), c3_launch.shape)]
+        arrival_date_at_c3_min = np.meshgrid(self.launch_span, self.arrival_span)[1][np.unravel_index(c3_launch.argmin(), c3_launch.shape)]
+
+
+        self.ax.plot(
+                launch_date_at_c3_min.to_datetime(),
+                arrival_date_at_c3_min.to_datetime(),
+                "ko",
+                markersize=15,
+        )
+        print(f"MINIMUM C3: {min_c3}")
+        print(f"LAUNCH AT: {launch_date_at_c3_min}")
+        print(f"ARRIVAL AT: {arrival_date_at_c3_min}")
+
+
 
         return (
             dv_launch * u.km / u.s,
