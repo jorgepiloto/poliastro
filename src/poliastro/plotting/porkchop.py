@@ -281,7 +281,7 @@ class PorkchopPlotter:
         )
         tof_lines.set(path_effects=[patheffects.withStroke(linewidth=6, foreground="w")])
         tof_lines_labels = self.ax.clabel(
-            tof_lines, inline=True, fmt="%1.0f years", colors="r", fontsize=14, use_clabeltext=True
+            tof_lines, inline=True, fmt="%1.0f years", colors="red", fontsize=14, use_clabeltext=True
         )
         plt.setp(tof_lines_labels, path_effects=[
             patheffects.withStroke(linewidth=3, foreground="w")])
@@ -305,18 +305,21 @@ class PorkchopPlotter:
             self.launch_dv.astype("float64"),
             launch_velocity_levels.astype("float64"),
             colors="red",
-            linewidths=2.0,
+            linewidths=3.5,
         )
-        self.ax.clabel(
-            departure_dv_lines, inline=1, fmt="%1.1f km/s", colors="red", fontsize=12
+        departure_dv_lines.set(path_effects=[patheffects.withStroke(linewidth=6, foreground="w")])
+        departure_dv_labels = self.ax.clabel(
+            departure_dv_lines, inline=True, fmt="%1.1f km/s", colors="red", fontsize=14, use_clabeltext=True
         )
+        plt.setp(departure_dv_labels, path_effects=[
+            patheffects.withStroke(linewidth=3, foreground="w")])
 
-    def plot_arrival_velocity(self, arrival_velocity_levels, ax=None):
+    def plot_arrival_velocity(self, levels, ax=None):
         """Plot the arrival velocity.
 
         Parameters
         ----------
-        arrival_velocity_levels: numpy.ndarray
+        levels: numpy.ndarray
             Levels for arrival velocity contour lines.
         ax : matplotlib.axes._subplots.AxesSubplot
             Axes object for plotting.
@@ -328,13 +331,16 @@ class PorkchopPlotter:
             [D.to_datetime() for D in self.launch_span],
             [A.to_datetime() for A in self.arrival_span],
             self.arrival_dv.astype("float64"),
-            arrival_velocity_levels.astype("float64"),
+            levels.astype("float64"),
             colors="red",
-            linewidths=2.0,
+            linewidths=3.5,
         )
-        self.ax.clabel(
-            arrival_dv_lines, inline=1, fmt="%1.1f km/s", colors="red", fontsize=12
+        arrival_dv_lines.set(path_effects=[patheffects.withStroke(linewidth=6, foreground="w")])
+        arrival_dv_labels = self.ax.clabel(
+            arrival_dv_lines, inline=True, fmt="%1.1f km/s", colors="red", fontsize=14, use_clabeltext=True
         )
+        plt.setp(arrival_dv_labels, path_effects=[
+            patheffects.withStroke(linewidth=3, foreground="w")])
 
     def show(self):
         """Show the porkchop plot."""
