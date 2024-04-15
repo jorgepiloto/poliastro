@@ -71,7 +71,8 @@ def plot_solar_system(
         # Instantiate the plotter and set the desired reference frame
         plotter = OrbitPlotter(
             backend=backend,
-            plane=Planes.EARTH_ECLIPTIC,
+            #plane=Planes.EARTH_ECLIPTIC,
+            plane=plane,
             length_scale_units=length_scale_units,
         )
         plotter.set_body_frame(Earth, epoch)
