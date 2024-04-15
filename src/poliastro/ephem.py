@@ -8,7 +8,9 @@ from astropy.coordinates import (
     CartesianRepresentation,
     get_body_barycentric_posvel,
 )
+from astropy.time import Time
 from astroquery.jplhorizons import Horizons
+import numpy as np
 
 from poliastro._math.interpolate import interp1d, sinc_interp, spline_interp
 from poliastro.bodies import Earth
@@ -310,6 +312,49 @@ class Ephem:
             epochs = epochs.reshape(1)
 
         return orbit.change_plane(plane).to_ephem(strategy=EpochsArray(epochs))
+
+    @classmethod
+    def from_csv(
+        cls,
+        filepath,
+        plane=Planes.EARTH_EQUATOR,
+        distance_units=u.km,
+        velocity_units=u.km / u.s,
+        scale="tdb",
+        format="jd"
+    ):
+        """Return `Ephem` from an ephemerides file.
+
+        The file must be a CSV file with the following columns: JD, X, Y, Z, VX,
+        VY, VZ.
+
+        Parameters
+        ----------
+        filepath : pathlib.Path
+            Path to the file.
+        plane : ~poliastro.frames.Planes, optional
+            Fundamental plane of the frame, default to Earth Equator.
+        distance_units : ~astropy.units.Unit, optional
+            Distance units, default to km.
+        velocity_units : ~astropy.units.Unit, optional
+            Velocity units, default to km/s.
+        scale : str, optional
+            Time scale of the epochs, default to TDB.
+        format : str, optional
+            Time format of the epochs, default to JD.
+
+        """
+        jd, x, y, z, d_x, d_y, d_z = np.loadtxt(filepath, delimiter=",", unpack=True)
+        coordinates = CartesianRepresentation(
+            x * distance_units, y * distance_units, z * distance_units,
+            differentials=CartesianDifferential(
+                d_x * velocity_units,
+                d_y * velocity_units,
+                d_z * velocity_units
+            )
+        )
+        epochs = Time(jd, scale=scale, format=format)
+        return cls(coordinates, epochs, plane)
 
     def sample(self, epochs=None, *, interpolator=SplineInterpolator()):
         """Returns coordinates at specified epochs.
