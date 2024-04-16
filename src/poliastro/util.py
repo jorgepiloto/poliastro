@@ -65,6 +65,7 @@ def time_range(
         result = start + (end - start) * np.linspace(0, 1, num_values)
 
     elif end is not None and spacing is not None:
+        end = Time(end, format=format, scale=scale)
         result = start + np.arange(0, (end - start).jd + 1, spacing.to_value(u.day)) * u.day
 
     else:
