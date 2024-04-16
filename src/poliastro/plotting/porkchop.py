@@ -30,7 +30,7 @@ def _targetting(departure_body, target_body, t_launch, t_arrival, prograde):
     tof = orb_arr.epoch - orb_dpt.epoch
 
     if tof.to_value(u.s) <= 0:
-        return None, None, None, None, None
+        return None, None, None, None, 0
 
     try:
         # Lambert is now a Maneuver object
@@ -111,17 +111,41 @@ class PorkchopPlotter:
         self.c3_arrival = np.array(c3_arrival).reshape(len(self.launch_span), len(self.arrival_span)).T
         self.tof = np.array(tof).reshape(len(self.launch_span), len(self.arrival_span)).T
 
+        """
         # # Compute the minimum c3 energy value for launch and its associated
         # # launch and arrival dates
-        # self.min_c3_launch = self.c3_launch.min()
-        # self.launch_date_at_min_c3_launch = np.meshgrid(self.launch_span, self.arrival_span)[0][np.unravel_index(self.c3_launch.argmin(), self.c3_launch.shape)]
-        # self.arrival_date_at_min_c3_launch = np.meshgrid(self.launch_span, self.arrival_span)[1][np.unravel_index(self.c3_launch.argmin(), self.c3_launch.shape)]
 
-        # # Compute the minimum c3 energy value for arrival and its associated
-        # # launch and arrival dates
-        # self.min_c3_arrival = self.c3_arrival.min()
-        # self.launch_date_at_min_c3_arrival = np.meshgrid(self.launch_span, self.arrival_span)[0][np.unravel_index(self.c3_arrival.argmin(), self.c3_arrival.shape)]
-        # self.arrival_date_at_min_c3_arrival = np.meshgrid(self.launch_span, self.arrival_span)[1][np.unravel_index(self.c3_arrival.argmin(), self.c3_arrival.shape)]
+        min_index = np.argmin(self.c3_launch)
+        masked_c3_launch = np.ma.array(self.c3_launch, mask=(self.c3_launch == self.c3_launch.flatten()[min_index]))
+        second_min_index = np.argmin(masked_c3_launch)
+
+        # Mask out both the minimum and second minimum values
+        masked_c3_launch = np.ma.array(masked_c3_launch, mask=(masked_c3_launch == masked_c3_launch.flatten()[second_min_index]))
+
+        # Find the index of the third minimum value in the flattened masked c3_launch array
+        third_min_index = np.argmin(masked_c3_launch)
+
+        # Convert the flattened index to indices for launch_span and arrival_span arrays
+        third_min_launch_index, third_min_arrival_index = np.unravel_index(third_min_index, self.c3_launch.shape)
+
+        # Retrieve the corresponding launch and arrival dates
+        self.c3_launch_min = self.c3_launch[third_min_launch_index, third_min_arrival_index]
+        self.launch_date_at_c3_launch_min = self.launch_span[third_min_launch_index]
+        self.arrival_date_at_c3_launch_min = self.arrival_span[third_min_arrival_index]
+
+        # Create an array of tuples containing c3_launch value, launch date, and arrival date
+        c3_date_tuples = [(self.c3_launch[i, j], self.launch_span[i], self.arrival_span[j])
+                          for i in range(len(self.launch_span))
+                          for j in range(len(self.arrival_span))]
+
+        # Sort the array of tuples based on c3_launch values
+        sorted_c3_date_tuples = sorted(c3_date_tuples, key=lambda x: x[0])
+
+        # Extract sorted c3_launch values, launch dates, and arrival dates into separate arrays
+        self.sorted_c3_launch_values = np.array([tup[0] for tup in sorted_c3_date_tuples])
+        self.sorted_launch_dates = np.array([tup[1] for tup in sorted_c3_date_tuples])
+        self.sorted_arrival_dates = np.array([tup[2] for tup in sorted_c3_date_tuples])
+        """
 
     def _setup_plot(self, ax):
         """Setup the plot.
@@ -217,24 +241,29 @@ class PorkchopPlotter:
             )
             self.ax.clabel(c3_arrival_lines, inline=1, fmt="%1.1f $km^2/s^2$", colors="k", fontsize=10)
 
-    def plot_time_of_flight(self, levels, ax=None):
+    def plot_time_of_flight(self, levels, use_years=False, ax=None):
         """Plot the arrival velocity.
 
         Parameters
         ----------
         levels: numpy.ndarray
             Levels for time of flight contour lines.
+        use_years: bool
+            Use years for time of flight. Otherwise, use days.
         ax : matplotlib.axes._subplots.AxesSubplot
             Axes object for plotting.
 
         """
         self._setup_plot(ax)
 
+        tof = self.tof / 365.25 if use_years else self.tof
+        levels = levels.to_value(u.year) if use_years else levels.to_value(u.day)
+
         tof_lines = self.ax.contour(
             [D.to_datetime() for D in self.launch_span],
             [A.to_datetime() for A in self.arrival_span],
-            (self.tof / 365.25).astype("float64"),
-            levels.to_value(u.year).astype("float64"),
+            tof.astype("float64"),
+            levels.astype("float64"),
             colors="red",
             linestyles="dashed",
             linewidths=3.5,
