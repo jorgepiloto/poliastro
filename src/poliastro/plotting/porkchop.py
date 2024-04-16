@@ -6,64 +6,24 @@ from matplotlib import pyplot as plt
 from matplotlib import patheffects
 import numpy as np
 
-from poliastro.bodies import (
-    Earth,
-    Jupiter,
-    Mars,
-    Mercury,
-    Moon,
-    Neptune,
-    Pluto,
-    Saturn,
-    Sun,
-    Uranus,
-    Venus,
-)
+from poliastro.bodies import Sun
 from poliastro.maneuver import Maneuver
 from poliastro.twobody.orbit import Orbit
 from poliastro.util import norm
 
 
-def _get_state(body, time):
-    """Computes the position of a body for a given time."""
-    solar_system_bodies = [
-        Sun,
-        Mercury,
-        Venus,
-        Earth,
-        Moon,
-        Mars,
-        Jupiter,
-        Saturn,
-        Uranus,
-        Neptune,
-        Pluto,
-    ]
-
-    # We check if body belongs to poliastro.bodies
-    if body in solar_system_bodies:
-        rr, vv = coord.get_body_barycentric_posvel(body.name, time)
-    else:
-        rr, vv = body.propagate(time).rv()
-        rr = coord.CartesianRepresentation(rr)
-        vv = coord.CartesianRepresentation(vv)
-
-    return rr.xyz, vv.xyz
-
-
 def _targetting(departure_body, target_body, t_launch, t_arrival, prograde):
     """This function returns the increment in departure and arrival velocities."""
     # Get position and velocities for departure and arrival
-    rr_dpt_body, vv_dpt_body = _get_state(departure_body, t_launch)
-    rr_arr_body, vv_arr_body = _get_state(target_body, t_arrival)
+    rr_dpt_body, vv_dpt_body =  departure_body.rv(epochs=t_launch)
+    rr_arr_body, vv_arr_body =  target_body.rv(epochs=t_arrival)
 
     # Transform into Orbit objects
-    attractor = departure_body.parent
     orb_dpt = Orbit.from_vectors(
-        attractor, rr_dpt_body, vv_dpt_body, epoch=t_launch
+        Sun, rr_dpt_body, vv_dpt_body, epoch=t_launch
     )
     orb_arr = Orbit.from_vectors(
-        attractor, rr_arr_body, vv_arr_body, epoch=t_arrival
+        Sun, rr_arr_body, vv_arr_body, epoch=t_arrival
     )
 
     # Define time of flight
@@ -99,7 +59,7 @@ def _targetting(departure_body, target_body, t_launch, t_arrival, prograde):
 def targeting(departure_body, target_body, launch_span, arrival_span, prograde):
     args_list = [
         (departure_body, target_body, t_launch, t_arrival, prograde)
-        for t_arrival in arrival_span for t_launch in launch_span
+        for t_launch in launch_span for t_arrival in arrival_span
     ]
     with Pool() as pool:
         results = pool.starmap(_targetting, args_list)
@@ -143,25 +103,25 @@ class PorkchopPlotter:
             self.arrival_span,
             self.prograde,
         )
+
         dv_launch, dv_arrival, c3_launch, c3_arrival, tof = zip(*results)
-        self.launch_dv = np.array(dv_launch).reshape(len(self.launch_span), len(self.arrival_span))
-        self.arrival_dv = np.array(dv_arrival).reshape(len(self.launch_span), len(self.arrival_span))
-        self.c3_launch = np.array(c3_launch).reshape(len(self.launch_span), len(self.arrival_span))
-        self.c3_arrival = np.array(c3_arrival).reshape(len(self.launch_span), len(self.arrival_span))
-        self.tof = np.array(tof).reshape(len(self.launch_span), len(self.arrival_span))
+        self.launch_dv = np.array(dv_launch).reshape(len(self.launch_span), len(self.arrival_span)).T
+        self.arrival_dv = np.array(dv_arrival).reshape(len(self.launch_span), len(self.arrival_span)).T
+        self.c3_launch = np.array(c3_launch).reshape(len(self.launch_span), len(self.arrival_span)).T
+        self.c3_arrival = np.array(c3_arrival).reshape(len(self.launch_span), len(self.arrival_span)).T
+        self.tof = np.array(tof).reshape(len(self.launch_span), len(self.arrival_span)).T
 
+        # # Compute the minimum c3 energy value for launch and its associated
+        # # launch and arrival dates
+        # self.min_c3_launch = self.c3_launch.min()
+        # self.launch_date_at_min_c3_launch = np.meshgrid(self.launch_span, self.arrival_span)[0][np.unravel_index(self.c3_launch.argmin(), self.c3_launch.shape)]
+        # self.arrival_date_at_min_c3_launch = np.meshgrid(self.launch_span, self.arrival_span)[1][np.unravel_index(self.c3_launch.argmin(), self.c3_launch.shape)]
 
-        # Compute the minimum c3 energy value for launch and its associated
-        # launch and arrival dates
-        self.min_c3_launch = self.c3_launch.min()
-        self.launch_date_at_min_c3_launch = np.meshgrid(self.launch_span, self.arrival_span)[0][np.unravel_index(self.c3_launch.argmin(), self.c3_launch.shape)]
-        self.arrival_date_at_min_c3_launch = np.meshgrid(self.launch_span, self.arrival_span)[1][np.unravel_index(self.c3_launch.argmin(), self.c3_launch.shape)]
-
-        # Compute the minimum c3 energy value for arrival and its associated
-        # launch and arrival dates
-        self.min_c3_arrival = self.c3_arrival.min()
-        self.launch_date_at_min_c3_arrival = np.meshgrid(self.launch_span, self.arrival_span)[0][np.unravel_index(self.c3_arrival.argmin(), self.c3_arrival.shape)]
-        self.arrival_date_at_min_c3_arrival = np.meshgrid(self.launch_span, self.arrival_span)[1][np.unravel_index(self.c3_arrival.argmin(), self.c3_arrival.shape)]
+        # # Compute the minimum c3 energy value for arrival and its associated
+        # # launch and arrival dates
+        # self.min_c3_arrival = self.c3_arrival.min()
+        # self.launch_date_at_min_c3_arrival = np.meshgrid(self.launch_span, self.arrival_span)[0][np.unravel_index(self.c3_arrival.argmin(), self.c3_arrival.shape)]
+        # self.arrival_date_at_min_c3_arrival = np.meshgrid(self.launch_span, self.arrival_span)[1][np.unravel_index(self.c3_arrival.argmin(), self.c3_arrival.shape)]
 
     def _setup_plot(self, ax):
         """Setup the plot.
