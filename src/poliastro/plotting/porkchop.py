@@ -188,8 +188,8 @@ class PorkchopPlotter:
             self.c3_launch.astype("float64"),
             levels.astype("float64"),
         )
-        c3_colorbar = self.fig.colorbar(c3_launch_colors)
-        c3_colorbar.set_label("$km^2 / s^2$")
+        self.c3_colorbar = self.fig.colorbar(c3_launch_colors)
+        self.c3_colorbar.set_label("$km^2 / s^2$")
 
         # Draw the solid contour lines on top of previous colors
         if plot_contour_lines:
@@ -256,8 +256,10 @@ class PorkchopPlotter:
         """
         self._setup_plot(ax)
 
+        # TODO: avoid this conversion in the future
         tof = self.tof / 365.25 if use_years else self.tof
         levels = levels.to_value(u.year) if use_years else levels.to_value(u.day)
+        fmt = "%1.0f years" if use_years else "%1.0f days"
 
         tof_lines = self.ax.contour(
             [D.to_datetime() for D in self.launch_span],
@@ -270,7 +272,7 @@ class PorkchopPlotter:
         )
         tof_lines.set(path_effects=[patheffects.withStroke(linewidth=6, foreground="w")])
         tof_lines_labels = self.ax.clabel(
-            tof_lines, inline=True, fmt="%1.0f years", colors="red", fontsize=14, use_clabeltext=True
+            tof_lines, inline=True, fmt=fmt, colors="red", fontsize=14, use_clabeltext=True
         )
         plt.setp(tof_lines_labels, path_effects=[
             patheffects.withStroke(linewidth=3, foreground="w")])
