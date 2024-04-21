@@ -25,6 +25,8 @@ def plot_solar_system(
     backend=None,
     plane=Planes.EARTH_ECLIPTIC,
     length_scale_units=u.km,
+    axis=None,
+    view="XY",
 ):
     """Plots the whole solar system in one single call.
 
@@ -74,6 +76,7 @@ def plot_solar_system(
             #plane=Planes.EARTH_ECLIPTIC,
             plane=plane,
             length_scale_units=length_scale_units,
+            view=view,
         )
         plotter.set_body_frame(Earth, epoch)
 

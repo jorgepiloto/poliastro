@@ -1,5 +1,6 @@
 """A module containing different orbit related plotters."""
 
+from enum import Enum
 from collections import namedtuple
 import warnings
 
@@ -42,6 +43,7 @@ class OrbitPlotter:
         *,
         plane=None,
         length_scale_units=u.km,
+        view="XY"
     ):
         """Initializes the plotter instance.
 
@@ -60,7 +62,7 @@ class OrbitPlotter:
         """
         # Initialize the backend, number of points and length scale
         self._backend = backend or orbit_plotter_backends.Matplotlib2D(
-            ax=None, use_dark_theme=False
+            ax=None, use_dark_theme=False, view=view
         )
         self._num_points = num_points
         self._length_scale_units = length_scale_units
@@ -223,7 +225,8 @@ class OrbitPlotter:
             projected into the frame of the orbit plotter.
 
         """
-        vec_proj = vec - (vec @ self._frame[2])[:, None] * self._frame[2]
+        index = {"xy": 2, "xz": 1, "yz": 0}[self.backend.view.lower()]
+        vec_proj = vec - (vec @ self._frame[index])[:, None] * self._frame[index]
         return [vec_proj @ self._frame[i] for i in range(3)]
 
     def _unplot_attractor(self):

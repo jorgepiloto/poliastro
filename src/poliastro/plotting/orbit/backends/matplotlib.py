@@ -20,7 +20,7 @@ def _segments_from_arrays(x, y):
 class Matplotlib2D(OrbitPlotterBackend):
     """An orbit plotter backend class based on Matplotlib."""
 
-    def __init__(self, ax=None, use_dark_theme=False):
+    def __init__(self, ax=None, use_dark_theme=False, view="XY"):
         """Initializes a backend instance.
 
         Parameters
@@ -30,6 +30,8 @@ class Matplotlib2D(OrbitPlotterBackend):
         use_dark_theme : bool, optional
             If ``True``, uses dark theme. If ``False``, uses light theme.
             Default to ``False``.
+        view : str
+            A string indicating the plane for the plot. Default to "XY".
 
         """
         if ax is None:
@@ -39,6 +41,8 @@ class Matplotlib2D(OrbitPlotterBackend):
             else:
                 _, ax = plt.subplots(figsize=(6, 6))
         super().__init__(ax, self.__class__.__name__)
+        self.view = view.lower()
+        self._view_indices = [{'x': 0, 'y': 1, 'z': 2}[axis] for axis in self.view]
 
     @property
     def ax(self):
@@ -98,8 +102,8 @@ class Matplotlib2D(OrbitPlotterBackend):
 
         """
         (marker_trace,) = self.ax.plot(
-            position[0],
-            position[1],
+            position[self._view_indices[0]],
+            position[self._view_indices[-1]],
             color=color,
             marker=marker_symbol,
             markersize=size,
@@ -182,8 +186,8 @@ class Matplotlib2D(OrbitPlotterBackend):
         return self.ax.add_patch(
             mpl_patches.Circle(
                 (
-                    position[0],
-                    position[1],
+                    position[self._view_indices[0]],
+                    position[self._view_indices[1]],
                 ),
                 radius,
                 color=color,
@@ -234,7 +238,8 @@ class Matplotlib2D(OrbitPlotterBackend):
         linestyle = "dashed" if dashed else "solid"
 
         # Unpack the x and y coordinates
-        x, y, _ = coordinates
+        # x, y, _ = coordinates
+        x, y = coordinates[self._view_indices[0]], coordinates[self._view_indices[-1]]
 
         # Generate the colors if coordinates trail is required
         if len(colors) > 1:
