@@ -12,7 +12,7 @@ from poliastro.twobody.orbit import Orbit
 from poliastro.util import norm
 
 
-def _targetting(departure_body, target_body, t_launch, t_arrival, prograde):
+def _targetting(departure_body, target_body, t_launch, t_arrival, prograde, escape_velocity):
     """This function returns the increment in departure and arrival velocities."""
     # Get position and velocities for departure and arrival
     rr_dpt_body, vv_dpt_body =  departure_body.rv(epochs=t_launch)
@@ -30,7 +30,8 @@ def _targetting(departure_body, target_body, t_launch, t_arrival, prograde):
     tof = orb_arr.epoch - orb_dpt.epoch
 
     if tof.to_value(u.s) <= 0:
-        return None, None, None, None, 0
+        #return None, None, None, None, 0
+        return np.nan, np.nan, np.nan, np.nan, 0
 
     try:
         # Lambert is now a Maneuver object
@@ -38,6 +39,8 @@ def _targetting(departure_body, target_body, t_launch, t_arrival, prograde):
 
         # Get norm delta velocities
         dv_dpt = norm(man_lambert.impulses[0][1])
+        if escape_velocity is not None:
+            dv_dpt += escape_velocity
         dv_arr = norm(man_lambert.impulses[1][1])
 
         # Compute all the output variables
@@ -53,12 +56,13 @@ def _targetting(departure_body, target_body, t_launch, t_arrival, prograde):
         )
 
     except AssertionError:
-        return None, None, None, None, None
+        #return None, None, None, None, None
+        return np.nan, np.nan, np.nan, np.nan, np.nan
 
 
-def targeting(departure_body, target_body, launch_span, arrival_span, prograde):
+def targeting(departure_body, target_body, launch_span, arrival_span, prograde, escape_velocity):
     args_list = [
-        (departure_body, target_body, t_launch, t_arrival, prograde)
+        (departure_body, target_body, t_launch, t_arrival, prograde, escape_velocity)
         for t_launch in launch_span for t_arrival in arrival_span
     ]
     with Pool() as pool:
@@ -89,12 +93,14 @@ class PorkchopPlotter:
         launch_span,
         arrival_span,
         prograde=True,
+        escape_velocity=None,
     ):
         self.departure_body = departure_body
         self.target_body = target_body
         self.launch_span = launch_span
         self.arrival_span = arrival_span
         self.prograde = prograde
+        self.escape_velocity = escape_velocity
 
         results = targeting(
             self.departure_body,
@@ -102,8 +108,10 @@ class PorkchopPlotter:
             self.launch_span,
             self.arrival_span,
             self.prograde,
+            self.escape_velocity,
         )
 
+        # Unpack the results and reshape them into 2D arrays
         dv_launch, dv_arrival, c3_launch, c3_arrival, tof = zip(*results)
         self.launch_dv = np.array(dv_launch).reshape(len(self.launch_span), len(self.arrival_span)).T
         self.arrival_dv = np.array(dv_arrival).reshape(len(self.launch_span), len(self.arrival_span)).T
@@ -111,41 +119,17 @@ class PorkchopPlotter:
         self.c3_arrival = np.array(c3_arrival).reshape(len(self.launch_span), len(self.arrival_span)).T
         self.tof = np.array(tof).reshape(len(self.launch_span), len(self.arrival_span)).T
 
-        """
-        # # Compute the minimum c3 energy value for launch and its associated
-        # # launch and arrival dates
+        # Find the minimum C3 launch energy and its associated dates
+        min_index = np.unravel_index(np.nanargmin(self.c3_launch), self.c3_launch.shape)
+        self.c3_launch_min = self.c3_launch[min_index]
+        self.launch_date_at_c3_launch_min = self.launch_span[min_index[1]]
+        self.arrival_date_at_c3_launch_min = self.arrival_span[min_index[0]]
 
-        min_index = np.argmin(self.c3_launch)
-        masked_c3_launch = np.ma.array(self.c3_launch, mask=(self.c3_launch == self.c3_launch.flatten()[min_index]))
-        second_min_index = np.argmin(masked_c3_launch)
-
-        # Mask out both the minimum and second minimum values
-        masked_c3_launch = np.ma.array(masked_c3_launch, mask=(masked_c3_launch == masked_c3_launch.flatten()[second_min_index]))
-
-        # Find the index of the third minimum value in the flattened masked c3_launch array
-        third_min_index = np.argmin(masked_c3_launch)
-
-        # Convert the flattened index to indices for launch_span and arrival_span arrays
-        third_min_launch_index, third_min_arrival_index = np.unravel_index(third_min_index, self.c3_launch.shape)
-
-        # Retrieve the corresponding launch and arrival dates
-        self.c3_launch_min = self.c3_launch[third_min_launch_index, third_min_arrival_index]
-        self.launch_date_at_c3_launch_min = self.launch_span[third_min_launch_index]
-        self.arrival_date_at_c3_launch_min = self.arrival_span[third_min_arrival_index]
-
-        # Create an array of tuples containing c3_launch value, launch date, and arrival date
-        c3_date_tuples = [(self.c3_launch[i, j], self.launch_span[i], self.arrival_span[j])
-                          for i in range(len(self.launch_span))
-                          for j in range(len(self.arrival_span))]
-
-        # Sort the array of tuples based on c3_launch values
-        sorted_c3_date_tuples = sorted(c3_date_tuples, key=lambda x: x[0])
-
-        # Extract sorted c3_launch values, launch dates, and arrival dates into separate arrays
-        self.sorted_c3_launch_values = np.array([tup[0] for tup in sorted_c3_date_tuples])
-        self.sorted_launch_dates = np.array([tup[1] for tup in sorted_c3_date_tuples])
-        self.sorted_arrival_dates = np.array([tup[2] for tup in sorted_c3_date_tuples])
-        """
+        # Find the minimum C3 arrival energy and its associated dates
+        min_index = np.unravel_index(np.nanargmin(self.c3_arrival), self.c3_arrival.shape)
+        self.c3_arrival_min = self.c3_arrival[min_index]
+        self.launch_date_at_c3_arrival_min = self.launch_span[min_index[1]]
+        self.arrival_date_at_c3_arrival_min = self.arrival_span[min_index[0]]
 
     def _setup_plot(self, ax):
         """Setup the plot.
