@@ -7,6 +7,7 @@ from matplotlib import patheffects
 import numpy as np
 
 from poliastro.bodies import Sun
+from poliastro.ephem import Ephem
 from poliastro.maneuver import Maneuver
 from poliastro.twobody.orbit import Orbit
 from poliastro.util import norm
@@ -15,8 +16,10 @@ from poliastro.util import norm
 def _targetting(departure_body, target_body, t_launch, t_arrival, prograde, escape_velocity):
     """This function returns the increment in departure and arrival velocities."""
     # Get position and velocities for departure and arrival
-    rr_dpt_body, vv_dpt_body =  departure_body.rv(epochs=t_launch)
-    rr_arr_body, vv_arr_body =  target_body.rv(epochs=t_arrival)
+    rr_dpt_body, vv_dpt_body = Ephem.from_body(departure_body, t_launch, attractor=Sun).rv()
+    rr_dpt_body, vv_dpt_body = rr_dpt_body[0], vv_dpt_body[0]
+    rr_arr_body, vv_arr_body = Ephem.from_body(target_body, t_arrival, attractor=Sun).rv()
+    rr_arr_body, vv_arr_body = rr_arr_body[0], vv_arr_body[0]
 
     # Transform into Orbit objects
     orb_dpt = Orbit.from_vectors(
@@ -94,6 +97,7 @@ class PorkchopPlotter:
         arrival_span,
         prograde=True,
         escape_velocity=None,
+        ax=None,
     ):
         self.departure_body = departure_body
         self.target_body = target_body
@@ -101,6 +105,7 @@ class PorkchopPlotter:
         self.arrival_span = arrival_span
         self.prograde = prograde
         self.escape_velocity = escape_velocity
+        self._ax = ax
 
         results = targeting(
             self.departure_body,
@@ -147,6 +152,30 @@ class PorkchopPlotter:
 
         self.ax.set_xlabel("Launch date", fontsize=10, fontweight="bold")
         self.ax.set_ylabel("Arrival date", fontsize=10, fontweight="bold")
+
+    def porkchop(self, ax=None):
+        """Plot the porkchop and return trajectory data.
+
+        Parameters
+        ----------
+        ax : matplotlib.axes._subplots.AxesSubplot, optional
+            Axes object for plotting. If not provided, uses the one passed at
+            construction time, or creates a new one.
+
+        Returns
+        -------
+        tuple
+            A tuple of (launch_dv, arrival_dv, c3_launch, c3_arrival, tof) arrays.
+
+        """
+        self.plot_launch_energy(ax=ax or self._ax)
+        return (
+            self.launch_dv,
+            self.arrival_dv,
+            self.c3_launch,
+            self.c3_arrival,
+            self.tof,
+        )
 
     def plot_launch_energy(
         self,

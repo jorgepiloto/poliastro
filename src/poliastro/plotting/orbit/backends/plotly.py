@@ -199,6 +199,7 @@ class Plotly2D(BasePlotly):
             template=theme,
         )
         super().__init__(figure, layout)
+        self.view = "xy"
 
     def draw_marker(self, position, *, color, label, marker_symbol, size):
         """Draw a marker into the scene.
